@@ -215,6 +215,18 @@ class ParserTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(4, $result[0]->getTransactions()[2]->getTransactionSequenceDetail());
     }
 
+    public function testFileSavedInUtf8()
+    {
+        $parser = new Parser();
+
+        $statements = $parser->parseFile($this->getSamplePath('sample9.cod'));
+        $this->assertCount(1,$statements);
+
+        $statement = $statements[0];
+
+        $this->assertEquals('BOUWBEDRIJF VOOR BELGIË', $statement->getAccount()->getName());
+    }
+
     /**
      * @dataProvider provideConfidentialSamples
      */

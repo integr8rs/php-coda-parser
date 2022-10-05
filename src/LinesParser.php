@@ -94,7 +94,7 @@ class LinesParser implements ParserInterface
 	{
 		return array_map(
 			function($line) {
-				return mb_convert_encoding($line, "UTF-8", "ISO-8859-1");
+                return mb_convert_encoding($line, "UTF-8", "UTF-8,ISO-8859-1");
 			},
 			file($codaFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
 	}
