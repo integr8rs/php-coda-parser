@@ -9,7 +9,8 @@
 		{ "name": "Wim Verstuyf", "email": "wim.verstuyf@codelicious.be" }
 	],
 	"require": {	
-		"php": ">=7.0.0"
+		"php": ">=7.0.0",
+		"ext-mbstring": "*"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "9.*"
