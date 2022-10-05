@@ -215,6 +215,34 @@ class ParserTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(4, $result[0]->getTransactions()[2]->getTransactionSequenceDetail());
     }
 
+    /**
+     * @dataProvider provideConfidentialSamples
+     */
+    public function testConfidentialSamplesCanBeParsed(string $filepath)
+    {
+        $parser = new Parser();
+
+        $statements = $parser->parseFile($filepath);
+
+        $this->assertIsArray($statements);
+        $this->assertNotEmpty($statements);
+
+        foreach ($statements as $statement) {
+            $difference = $statement->getNewBalance() - $statement->getInitialBalance();
+            $differenceAccordingToTransactions = array_sum(
+                array_map(static function(Transaction $transaction){return $transaction->getAmount(); }, $statement->getTransactions())
+            );
+            $this->assertEqualsWithDelta($difference,$differenceAccordingToTransactions,0.01);
+        }
+    }
+
+    public function provideConfidentialSamples()
+    {
+        foreach (glob(__DIR__ . DIRECTORY_SEPARATOR . 'ConfidentialSamples' . DIRECTORY_SEPARATOR . '*.cod') as $filename) {
+            yield [$filename];
+        }
+    }
+
     private function getSamplePath($sampleFile)
     {
         return __DIR__ . DIRECTORY_SEPARATOR . 'Samples' . DIRECTORY_SEPARATOR . $sampleFile;
