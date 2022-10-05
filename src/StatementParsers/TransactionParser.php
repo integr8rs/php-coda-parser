@@ -113,29 +113,29 @@ class TransactionParser
 	}
 
 	/**
-	 * @param LineInterface[] $lines
-	 * @return LineInterface[]
+	 * @param LineInterface[][] $transactionLineGroups
+	 * @return LineInterface[][]
 	 */
-	public function filter(array $transactionLines)
+	public function filter(array $transactionLineGroups)
 	{
 		$filteredTransactionLines = [];
 		$transactionPart1LineType = new LineType(LineType::TransactionPart1);
 		$informationPart1LineType = new LineType(LineType::InformationPart1);
 
-		foreach ($transactionLines as $transactionLine) {
+		foreach ($transactionLineGroups as $transactionLineGroup) {
 			/** @var TransactionPart1Line|null $transactionPart1Line */
-			$transactionPart1Line = getFirstLineOfType($transactionLine, $transactionPart1LineType);
+			$transactionPart1Line = getFirstLineOfType($transactionLineGroup, $transactionPart1LineType);
 			/** @var InformationPart1Line|null $informationPart1Line */
-			$informationPart1Line = getFirstLineOfType($transactionLine, $informationPart1LineType);
+			$informationPart1Line = getFirstLineOfType($transactionLineGroup, $informationPart1LineType);
 
 			if ($transactionPart1Line && $this->isCollectiveTransactionCode($transactionPart1Line->getTransactionCode()) && $transactionPart1Line->getSequenceNumberDetail()->getValue() < 2) {
 				continue;
 			}
-			if ($informationPart1Line && $this->isCollectiveTransactionCode($informationPart1Line->getTransactionCode()) && $informationPart1Line->getSequenceNumberDetail()->getValue() < 2) {
+			if ($informationPart1Line && $this->isCollectiveTransactionCode($informationPart1Line->getTransactionCode()) && count($transactionLineGroup) === 1) {
 				continue;
 			}
 
-			$filteredTransactionLines[] = $transactionLine;
+			$filteredTransactionLines[] = $transactionLineGroup;
 		}
 
 		return $filteredTransactionLines;

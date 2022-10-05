@@ -79,7 +79,7 @@ class StatementParser
 			)
 		);
 
-		$transactionLines = $this->groupTransactions(
+		$transactionLineGroups = $this->groupTransactions(
 			filterLinesOfTypes(
 				$lines,
 				[
@@ -97,7 +97,7 @@ class StatementParser
 		$transactions = array_map(
 			function(array $lines) use ($transactionParser) {
 				return $transactionParser->parse($lines);
-			}, $transactionParser->filter($transactionLines));
+			}, $transactionParser->filter($transactionLineGroups));
 
 		return new Statement(
 			$date,
@@ -122,7 +122,7 @@ class StatementParser
 		$sequenceNumber = -1;
 		$sequenceNumberDetail = -1;
 
-		foreach ($lines as $line) {
+		foreach ($lines as $i => $line) {
 			/** @var TransactionPart1Line|TransactionPart2Line|TransactionPart3Line|InformationPart1Line|InformationPart2Line|InformationPart3Line $transactionOrInformationLine */
 			$transactionOrInformationLine = $line;
 			$isCollectiveTransaction = method_exists($transactionOrInformationLine, 'getTransactionCode') && $transactionOrInformationLine->getTransactionCode()->getOperation()->getValue() === '07';
