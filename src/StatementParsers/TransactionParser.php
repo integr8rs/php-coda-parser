@@ -118,7 +118,7 @@ class TransactionParser
 	 */
 	public function filter(array $transactionLineGroups)
 	{
-		$filteredTransactionLines = [];
+		$filteredTransactionLineGroups = [];
 		$transactionPart1LineType = new LineType(LineType::TransactionPart1);
 		$informationPart1LineType = new LineType(LineType::InformationPart1);
 
@@ -128,17 +128,32 @@ class TransactionParser
 			/** @var InformationPart1Line|null $informationPart1Line */
 			$informationPart1Line = getFirstLineOfType($transactionLineGroup, $informationPart1LineType);
 
-			if ($transactionPart1Line && $this->isCollectiveTransactionCode($transactionPart1Line->getTransactionCode()) && $transactionPart1Line->getSequenceNumberDetail()->getValue() < 2) {
-				continue;
-			}
-			if ($informationPart1Line && $this->isCollectiveTransactionCode($informationPart1Line->getTransactionCode()) && count($transactionLineGroup) === 1) {
-				continue;
-			}
+            if (!$transactionPart1Line) {
+                continue;
+            }
 
-			$filteredTransactionLines[] = $transactionLineGroup;
+            if ($transactionPart1Line->getTransactionCode()->getOperation()->getValue() === '37') {
+                $newTransactionLineGroup = [];
+                foreach ($transactionLineGroup as $i => $transactionLine) {
+                    if ($i !== 0 && ($transactionLine->getType()->getValue() === LineType::TransactionPart1)) {
+                        continue;
+                    }
+                    if (($i !== 1) && ($transactionLine->getType()->getValue() === LineType::TransactionPart2)) {
+                        continue;
+                    }
+                    if ($i !== 2 && ($transactionLine->getType()->getValue() === LineType::TransactionPart3)) {
+                        continue;
+                    }
+                    $newTransactionLineGroup[] = $transactionLine;
+                }
+
+                $transactionLineGroup = $newTransactionLineGroup;
+            }
+
+			$filteredTransactionLineGroups[] = $transactionLineGroup;
 		}
 
-		return $filteredTransactionLines;
+		return $filteredTransactionLineGroups;
 	}
 
 	/**

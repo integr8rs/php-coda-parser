@@ -20,7 +20,17 @@ function getFirstLineOfType(array $lines, LineType $type)
 		});
 	$line = reset($filteredLines);
 	
-	return $line?$line:null;
+	return $line ?: null;
+}
+
+function getCountLinesOfType(array $lines, LineType $type) {
+    $filteredLines = array_filter(
+        $lines,
+        function(LineInterface $line) use ($type) {
+            return $line->getType() == $type;
+        });
+
+    return count($filteredLines);
 }
 
 /**

@@ -3,6 +3,7 @@
 namespace Codelicious\Coda\StatementParsers;
 
 use function Codelicious\Coda\Helpers\filterLinesOfTypes;
+use function Codelicious\Coda\Helpers\getCountLinesOfType;
 use function Codelicious\Coda\Helpers\getFirstLineOfType;
 use Codelicious\Coda\Lines\IdentificationLine;
 use Codelicious\Coda\Lines\InformationPart1Line;
@@ -93,11 +94,13 @@ class StatementParser
 			)
 		);
 
-		$transactionParser = new TransactionParser();
-		$transactions = array_map(
+        $transactionParser = new TransactionParser();
+        $filteredTransactionGroups = $transactionParser->filter($transactionLineGroups);
+
+        $transactions = array_map(
 			function(array $lines) use ($transactionParser) {
 				return $transactionParser->parse($lines);
-			}, $transactionParser->filter($transactionLineGroups));
+			}, $filteredTransactionGroups);
 
 		return new Statement(
 			$date,
@@ -120,20 +123,16 @@ class StatementParser
 		$transactions = [];
 		$idx = -1;
 		$sequenceNumber = -1;
-		$sequenceNumberDetail = -1;
 
 		foreach ($lines as $i => $line) {
 			/** @var TransactionPart1Line|TransactionPart2Line|TransactionPart3Line|InformationPart1Line|InformationPart2Line|InformationPart3Line $transactionOrInformationLine */
 			$transactionOrInformationLine = $line;
-			$isCollectiveTransaction = method_exists($transactionOrInformationLine, 'getTransactionCode') && $transactionOrInformationLine->getTransactionCode()->getOperation()->getValue() === '07';
 
 			if (
 				!$transactions
 				|| $sequenceNumber != $transactionOrInformationLine->getSequenceNumber()->getValue()
-				|| ($isCollectiveTransaction && $sequenceNumberDetail != $transactionOrInformationLine->getSequenceNumberDetail()->getValue())
 			) {
 				$sequenceNumber = $transactionOrInformationLine->getSequenceNumber()->getValue();
-				$sequenceNumberDetail = $transactionOrInformationLine->getSequenceNumberDetail()->getValue();
 				$idx += 1;
 
 				$transactions[$idx] = [];
@@ -142,6 +141,83 @@ class StatementParser
 			$transactions[$idx][] = $transactionOrInformationLine;
 		}
 
+        $transactions = $this->splitCollectiveTransactions($transactions);
+
 		return $transactions;
 	}
+
+    private function groupSubTransactions(array $lines): array
+    {
+        $transactions = [];
+        $idx = -1;
+        $sequenceNumber = -1;
+        $sequenceNumberDetail = -1;
+
+        foreach ($lines as $i => $line) {
+            /** @var TransactionPart1Line|TransactionPart2Line|TransactionPart3Line|InformationPart1Line|InformationPart2Line|InformationPart3Line $transactionOrInformationLine */
+            $transactionOrInformationLine = $line;
+
+            if ($transactionOrInformationLine->getSequenceNumberDetail()->getValue() < 2) {
+                continue;
+            }
+
+            if (
+                !$transactions
+                || ($sequenceNumberDetail != $transactionOrInformationLine->getSequenceNumberDetail()->getValue())
+            ) {
+                $sequenceNumberDetail = $transactionOrInformationLine->getSequenceNumberDetail()->getValue();
+                $idx += 1;
+
+                $transactions[$idx] = [];
+            }
+
+            $transactions[$idx][] = $transactionOrInformationLine;
+        }
+
+        return $transactions;
+    }
+
+    /**
+     * @param LineInterface[][] $transactions
+     *
+     * @return LineInterface[][]
+     */
+    private function splitCollectiveTransactions(array $transactions): array
+    {
+        $transactionPart1LineType = new LineType(LineType::TransactionPart1);
+
+        $returnedTransactions = [];
+
+        foreach ($transactions as $transaction) {
+            if (!$this->isCollectiveTransaction($transaction)) {
+                $returnedTransactions[] = [$transaction];
+
+                continue;
+            }
+
+            // If a collectiveTransaction somehow only holds one transaction
+            if (getCountLinesOfType($transaction, $transactionPart1LineType) === 1) {
+                $returnedTransactions[] = [$transaction];
+
+                continue;
+            }
+
+            $returnedTransactions[] = $this->groupSubTransactions($transaction);
+        }
+
+        return array_merge(...$returnedTransactions);
+    }
+
+    /**
+     * @param LineInterface[] $transaction
+     *
+     * @return bool
+     */
+    private function isCollectiveTransaction(array $transaction): bool
+    {
+        /** @var TransactionPart1Line|null $transactionPart1Line */
+        $transactionPart1Line = getFirstLineOfType($transaction, new LineType(LineType::TransactionPart1));
+        return $transactionPart1Line && $transactionPart1Line->getTransactionCode()->getOperation()->getValue() === '07';
+    }
+
 }

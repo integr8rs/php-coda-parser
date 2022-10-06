@@ -4,7 +4,6 @@ namespace Codelicious\Tests\Coda;
 
 use Codelicious\Coda\Lines\LineInterface;
 use Codelicious\Coda\LinesParser;
-use PHPUnit_Framework_TestCase;
 
 class LinesParserTest extends \PHPUnit\Framework\TestCase
 {

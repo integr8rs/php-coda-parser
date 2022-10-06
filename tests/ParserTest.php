@@ -78,7 +78,7 @@ class ParserTest extends \PHPUnit\Framework\TestCase
         $result = $parser->parseFile($this->getSamplePath('sample2.cod'));
 
         $this->assertEmpty($result[0]->getTransactions()[0]->getAccount()->getName());
-        $this->assertEquals("Zichtrekening nr  21354598  - 2,11Justification in annex 00001680", $result[0]->getTransactions()[0]->getMessage());
+        $this->assertEquals("Zichtrekening nr  21354598  - 2,11Justification in annex", $result[0]->getTransactions()[0]->getMessage());
     }
 
     public function testHas4EntriesWithStructuredMessage()
@@ -250,8 +250,13 @@ class ParserTest extends \PHPUnit\Framework\TestCase
 
     public function provideConfidentialSamples()
     {
-        foreach (glob(__DIR__ . DIRECTORY_SEPARATOR . 'ConfidentialSamples' . DIRECTORY_SEPARATOR . '*.cod') as $filename) {
-            yield [$filename];
+        $allFiles = glob(__DIR__ . DIRECTORY_SEPARATOR . 'ConfidentialSamples' . DIRECTORY_SEPARATOR . '*.cod');
+        $allowedList = [
+        ];
+        $filteredFiles = array_filter($allFiles, static function($filename) use ($allowedList) {return empty($allowedList) || in_array(basename($filename),$allowedList, true);});
+
+        foreach ($filteredFiles as $filename) {
+            yield basename($filename) => [$filename];
         }
     }
 

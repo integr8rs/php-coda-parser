@@ -55,7 +55,7 @@ class Parser implements ParserInterface
 		foreach($linesGroupedPerStatement as $linesForStatement) {
 			$statement = $parser->parse($linesForStatement);
 			
-			array_push($statements, $statement);
+			$statements[] = $statement;
 		}
 		
 		return $statements;
@@ -76,7 +76,7 @@ class Parser implements ParserInterface
 				$statements[$idx] = [];
 			}
 			
-			array_push($statements[$idx], $line);
+			$statements[$idx][] = $line;
 		}
 		
 		return $statements;
