@@ -152,12 +152,17 @@ class StatementParser
         $idx = -1;
         $sequenceNumber = -1;
         $sequenceNumberDetail = -1;
+        $transactionPart1LineCount = 0;
 
         foreach ($lines as $i => $line) {
             /** @var TransactionPart1Line|TransactionPart2Line|TransactionPart3Line|InformationPart1Line|InformationPart2Line|InformationPart3Line $transactionOrInformationLine */
             $transactionOrInformationLine = $line;
 
-            if ($transactionOrInformationLine->getSequenceNumberDetail()->getValue() < 2) {
+            // Skip all lines until the second TransactionPart1Line
+            if ($transactionOrInformationLine instanceof TransactionPart1Line) {
+                $transactionPart1LineCount++;
+            }
+            if ($transactionPart1LineCount < 2) {
                 continue;
             }
 
